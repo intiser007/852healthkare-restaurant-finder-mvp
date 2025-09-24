@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./restaurant-finder-api
+      dockerfile: Dockerfile
+    container_name: healthkare-api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - FOURSQUARE_API_KEY=${FOURSQUARE_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    ports:
+      - "3000:3000"
+    networks:
+      - healthkare-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend UI Service
+  frontend:
+    build:
+      context: ./restaurant-finder-ui
+      dockerfile: Dockerfile
+    container_name: healthkare-ui
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - healthkare-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  healthkare-network:
+    driver: bridge
+
+volumes:
+  # Optional: Add persistent volumes if needed
+  healthkare-logs:
+    driver: local
