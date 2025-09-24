@@ -1,3 +1,6 @@
+# DISCLAIMER: Using LLM models in an application is expensive, so the project uses mlvoca.github.io
+# The LLM is a bit slow, and sometimes API requests might time out. But to prove the API call works a test-free-llm.js file was setup. To run it please type `node test-free-llm.js` in the terminal.
+
 # Restaurant Finder API
 
 A Node.js/Express backend API that provides personalized restaurant recommendations using real-time data from Foursquare Places API and AI-powered analysis from Google Gemini AI.
