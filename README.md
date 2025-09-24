@@ -1,5 +1,8 @@
 # Smart Restaurant Finder MVP
 
+## DISCLAIMER: Using LLM models in an application is expensive, so the project uses mlvoca.github.io
+## The LLM is a bit slow, and sometimes API requests might time out. But to prove the API call works a test-free-llm.js file was setup. To run it please type `node test-free-llm.js` in the terminal.
+
 A comprehensive web application that provides personalized restaurant recommendations based on user health profiles and real-time location data. This project consists of a Node.js/Express backend API and a Vue 3/Quasar frontend application.
 
 ## 🎯 Project Overview
