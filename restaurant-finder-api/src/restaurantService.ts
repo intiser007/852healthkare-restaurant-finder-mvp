@@ -18,12 +18,10 @@ export class RestaurantService {
     limit = 20
   ): Promise<FoursquareVenue[]> {
     try {
-      // Build URL with query parameters directly (following the working example)
-        let url = `${this.baseUrl}/places/search?ll=${latitude},${longitude}&limit=${limit}`;
+      // Fetch more results to have better filtering options
+      const fetchLimit = Math.max(limit * 3, 50); // Fetch 3x more than needed
+      let url = `${this.baseUrl}/places/search?ll=${latitude},${longitude}&limit=${fetchLimit}`;
       
-      if (categories) {
-        url += `&categories=${categories}`;
-      }
       if (query) {
         url += `&query=${encodeURIComponent(query)}`;
       }
@@ -45,13 +43,43 @@ export class RestaurantService {
       }
 
       const data = await response.json();
-      const restaurants = data.results || [];
+      const allResults = data.results || [];
 
-      // Filter out obviously closed restaurants
-      return restaurants.filter((venue: FoursquareVenue) =>
-        venue.closed_bucket !== 'VeryLikelyClosedPermanently' &&
-        venue.closed_bucket !== 'LikelyClosedPermanently'
-      );
+      // Filter results client-side to only include restaurants and cafes
+      const filteredResults = allResults.filter((venue: FoursquareVenue) => {
+        // First, filter out closed restaurants
+        if (venue.closed_bucket === 'VeryLikelyClosedPermanently' || 
+            venue.closed_bucket === 'LikelyClosedPermanently') {
+          return false;
+        }
+
+        // Then filter by categories to only include food-related places
+        const categories = venue.categories || [];
+        const isFoodRelated = categories.some(cat => {
+          const categoryName = cat.name.toLowerCase();
+          return categoryName.includes('restaurant') ||
+                 categoryName.includes('cafe') ||
+                 categoryName.includes('coffee') ||
+                 categoryName.includes('food') ||
+                 categoryName.includes('dining') ||
+                 categoryName.includes('bar') ||
+                 categoryName.includes('bistro') ||
+                 categoryName.includes('eatery') ||
+                 categoryName.includes('kitchen') ||
+                 categoryName.includes('grill') ||
+                 categoryName.includes('pizza') ||
+                 categoryName.includes('sushi') ||
+                 categoryName.includes('bakery') ||
+                 categoryName.includes('deli') ||
+                 categoryName.includes('fast food') ||
+                 categoryName.includes('buffet');
+        });
+
+        return isFoodRelated;
+      });
+
+      // Return only the requested number of results
+      return filteredResults.slice(0, limit);
     } catch (error: any) {
       console.error('Foursquare API error:', error.message);
       throw new Error(`Failed to fetch restaurant data from Foursquare API: ${error.message}`);
@@ -63,25 +91,9 @@ export class RestaurantService {
     longitude: number,
     categories: string[]
   ): Promise<FoursquareVenue[]> {
-    // category IDs — adjust as needed
-    const categoryMap: Record<string, string> = {
-      italian: '13236',
-      mexican: '13303',
-      chinese: '13145',
-      indian: '13199',
-      vegetarian: '13377',
-      vegan: '13377',
-      healthy: '13065',
-      general: '13065',
-    };
-
-    const ids = categories
-      .map(c => categoryMap[c.toLowerCase()])
-      .filter(Boolean)
-      .join(',');
-
-    const searchCategories = ids || categoryMap.general;
-    return this.searchRestaurants(latitude, longitude, undefined, searchCategories);
+    // Use the new filtering approach instead of category IDs
+    // This will fetch all food-related places and filter them
+    return this.searchRestaurants(latitude, longitude);
   }
 
   async getVenueDetails(fsqId: string): Promise<FoursquareVenue> {
